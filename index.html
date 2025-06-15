@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Beliawanis Gift Exchange</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #fdfcf9; padding: 20px; }
+    h1 { color: #006666; }
+    select, textarea, button, input { margin-top: 10px; padding: 10px; font-size: 16px; }
+    textarea { width: 100%; max-width: 400px; height: 120px; margin-bottom: 10px; }
+    button { background-color: #006666; color: white; border: none; cursor: pointer; }
+    .result { margin-top: 20px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 8px 0; font-size: 18px; }
+    .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+  </style>
+</head>
+<body>
+
+<h1>🎁 Beliawanis Live Gift Exchange 🎁</h1>
+
+<p>Customise your group names below:</p>
+<div id="groupEditor">
+  <div><input id="groupAName" value="Group A" onchange="updateGroupDropdown()"/></div>
+  <div><input id="groupBName" value="Group B" onchange="updateGroupDropdown()"/></div>
+  <div><input id="groupCName" value="Group C" onchange="updateGroupDropdown()"/></div>
+  <div><input id="groupDName" value="Group D" onchange="updateGroupDropdown()"/></div>
+  <div><input id="groupEName" value="Group E" onchange="updateGroupDropdown()"/></div>
+  <div><input id="groupFName" value="Group F" onchange="updateGroupDropdown()"/></div>
+</div>
+
+<br><label for="groupSelect">Select Group:</label>
+<select id="groupSelect" onchange="switchGroup()"></select>
+
+<div id="groupContainer">
+  <p>Enter names for <strong><span id="groupLabel">Group A</span></strong> (one per line):</p>
+  <textarea id="nameInput" placeholder="Aisha&#10;Maryam&#10;Nur..."></textarea><br>
+  <button onclick="generateExchange()">Shuffle & Assign</button>
+  <div class="result" id="results"></div>
+</div>
+
+<canvas id="confetti-canvas" class="confetti-container"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+const groupKeys = ['A','B','C','D','E','F'];
+let groupNames = { A: "Group A", B: "Group B", C: "Group C", D: "Group D", E: "Group E", F: "Group F" };
+let groups = { A: [], B: [], C: [], D: [], E: [], F: [] };
+
+function updateGroupDropdown() {
+  groupNames.A = document.getElementById('groupAName').value;
+  groupNames.B = document.getElementById('groupBName').value;
+  groupNames.C = document.getElementById('groupCName').value;
+  groupNames.D = document.getElementById('groupDName').value;
+  groupNames.E = document.getElementById('groupEName').value;
+  groupNames.F = document.getElementById('groupFName').value;
+
+  const select = document.getElementById('groupSelect');
+  select.innerHTML = '';
+  groupKeys.forEach(key => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.text = groupNames[key];
+    select.appendChild(option);
+  });
+
+  switchGroup();
+}
+
+function switchGroup() {
+  const selected = document.getElementById('groupSelect').value;
+  document.getElementById('groupLabel').innerText = groupNames[selected];
+  document.getElementById('nameInput').value = groups[selected].join('\n');
+  document.getElementById('results').innerHTML = '';
+}
+
+function shuffle(array) {
+  let currentIndex = array.length, randomIndex;
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+  return array;
+}
+
+function generateExchange() {
+  const groupKey = document.getElementById('groupSelect').value;
+  const input = document.getElementById('nameInput').value.trim();
+  let names = input.split('\n').map(n => n.trim()).filter(n => n !== '');
+
+  if (names.length < 3) {
+    alert('Please enter at least 3 names.');
+    return;
+  }
+
+  groups[groupKey] = [...names]; // Save names
+
+  let givers = [...names];
+  let receivers = shuffle([...names]);
+
+  // Ensure no self-gifting
+  let attempts = 0;
+  while (givers.some((g, i) => g === receivers[i]) && attempts < 10) {
+    receivers = shuffle([...names]);
+    attempts++;
+  }
+
+  if (attempts >= 10) {
+    alert('Failed to assign without self-gifting. Try again.');
+    return;
+  }
+
+  const resultDiv = document.getElementById('results');
+  resultDiv.innerHTML = `<h2>🎉 ${groupNames[groupKey]} Gift Assignments 🎉</h2><ul>` +
+    givers.map((giver, i) => `<li><strong>${giver}</strong> ➡️ ${receivers[i]}</li>`).join('') +
+    '</ul>';
+
+  launchConfetti();
+}
+
+function launchConfetti() {
+  confetti({
+    particleCount: 100,
+    spread: 80,
+    origin: { y: 0.6 }
+  });
+}
+
+updateGroupDropdown();
+</script>
+
+</body>
+</html>
