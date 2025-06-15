@@ -2,77 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Beliawanis Gift Exchange</title>
+  <title>Honesty Jar Exchange</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background: #fdfcf9; padding: 20px; }
     h1 { color: #006666; }
-    select, textarea, button, input { margin-top: 10px; padding: 10px; font-size: 16px; }
+    textarea, button, input, select { margin-top: 10px; padding: 10px; font-size: 16px; }
     textarea { width: 100%; max-width: 400px; height: 120px; margin-bottom: 10px; }
     button { background-color: #006666; color: white; border: none; cursor: pointer; }
     .result { margin-top: 20px; }
     ul { list-style: none; padding: 0; }
     li { margin: 8px 0; font-size: 18px; }
-    .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+    .group-section { margin-bottom: 40px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
   </style>
 </head>
 <body>
 
-<h1>🎁 Beliawanis Live Gift Exchange 🎁</h1>
+<!-- Banner Section -->
+<img src="giftexchg.jpg" alt="Gift Exchange Banner" style="width: 100%; height: 100vh">
 
-<p>Customise your group names below:</p>
-<div id="groupEditor">
-  <div><input id="groupAName" value="Group A" onchange="updateGroupDropdown()"/></div>
-  <div><input id="groupBName" value="Group B" onchange="updateGroupDropdown()"/></div>
-  <div><input id="groupCName" value="Group C" onchange="updateGroupDropdown()"/></div>
-  <div><input id="groupDName" value="Group D" onchange="updateGroupDropdown()"/></div>
-  <div><input id="groupEName" value="Group E" onchange="updateGroupDropdown()"/></div>
-  <div><input id="groupFName" value="Group F" onchange="updateGroupDropdown()"/></div>
+<h1>🎁 The Last Task 🎁</h1>
+
+<div>
+  <input type="text" id="newGroupName" placeholder="Enter new group name">
+  <button onclick="addGroup()">Add Group</button>
 </div>
 
-<br><label for="groupSelect">Select Group:</label>
-<select id="groupSelect" onchange="switchGroup()"></select>
-
-<div id="groupContainer">
-  <p>Enter names for <strong><span id="groupLabel">Group A</span></strong> (one per line):</p>
-  <textarea id="nameInput" placeholder="Aisha&#10;Maryam&#10;Nur..."></textarea><br>
-  <button onclick="generateExchange()">Shuffle & Assign</button>
-  <div class="result" id="results"></div>
-</div>
+<div id="groupsContainer"></div>
 
 <canvas id="confetti-canvas" class="confetti-container"></canvas>
-
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
-const groupKeys = ['A','B','C','D','E','F'];
-let groupNames = { A: "Group A", B: "Group B", C: "Group C", D: "Group D", E: "Group E", F: "Group F" };
-let groups = { A: [], B: [], C: [], D: [], E: [], F: [] };
+let groupCounter = 0;
+const groups = {};
 
-function updateGroupDropdown() {
-  groupNames.A = document.getElementById('groupAName').value;
-  groupNames.B = document.getElementById('groupBName').value;
-  groupNames.C = document.getElementById('groupCName').value;
-  groupNames.D = document.getElementById('groupDName').value;
-  groupNames.E = document.getElementById('groupEName').value;
-  groupNames.F = document.getElementById('groupFName').value;
+function addGroup() {
+  const name = document.getElementById('newGroupName').value.trim();
+  if (!name) {
+    alert("Please enter a group name.");
+    return;
+  }
 
-  const select = document.getElementById('groupSelect');
-  select.innerHTML = '';
-  groupKeys.forEach(key => {
-    const option = document.createElement('option');
-    option.value = key;
-    option.text = groupNames[key];
-    select.appendChild(option);
-  });
+  groupCounter++;
+  const groupId = "group_" + groupCounter;
+  groups[groupId] = [];
 
-  switchGroup();
-}
+  const container = document.createElement("div");
+  container.className = "group-section";
+  container.id = groupId + "_section";
+  container.innerHTML = `
+    <h2>${name}</h2>
+    <textarea id="${groupId}_names" placeholder="Enter one name per line"></textarea><br>
+    <button onclick="generateExchange('${groupId}', '${name}')">Shuffle & Assign</button>
+    <div class="result" id="${groupId}_results"></div>
+  `;
+  document.getElementById('groupsContainer').appendChild(container);
 
-function switchGroup() {
-  const selected = document.getElementById('groupSelect').value;
-  document.getElementById('groupLabel').innerText = groupNames[selected];
-  document.getElementById('nameInput').value = groups[selected].join('\n');
-  document.getElementById('results').innerHTML = '';
+  document.getElementById('newGroupName').value = '';
 }
 
 function shuffle(array) {
@@ -86,17 +72,15 @@ function shuffle(array) {
   return array;
 }
 
-function generateExchange() {
-  const groupKey = document.getElementById('groupSelect').value;
-  const input = document.getElementById('nameInput').value.trim();
+function generateExchange(groupId, groupName) {
+  const textarea = document.getElementById(`${groupId}_names`);
+  const input = textarea.value.trim();
   let names = input.split('\n').map(n => n.trim()).filter(n => n !== '');
 
   if (names.length < 3) {
     alert('Please enter at least 3 names.');
     return;
   }
-
-  groups[groupKey] = [...names]; // Save names
 
   let givers = [...names];
   let receivers = shuffle([...names]);
@@ -113,23 +97,13 @@ function generateExchange() {
     return;
   }
 
-  const resultDiv = document.getElementById('results');
-  resultDiv.innerHTML = `<h2>🎉 ${groupNames[groupKey]} Gift Assignments 🎉</h2><ul>` +
+  const resultDiv = document.getElementById(`${groupId}_results`);
+  resultDiv.innerHTML = `<h3>🎉 ${groupName} Gift Assignments 🎉</h3><ul>` +
     givers.map((giver, i) => `<li><strong>${giver}</strong> ➡️ ${receivers[i]}</li>`).join('') +
     '</ul>';
 
-  launchConfetti();
+  confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
 }
-
-function launchConfetti() {
-  confetti({
-    particleCount: 100,
-    spread: 80,
-    origin: { y: 0.6 }
-  });
-}
-
-updateGroupDropdown();
 </script>
 
 </body>
